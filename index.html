@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .table { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Store Manager</h1>
+        
+        <!-- Form for adding/editing bin locations -->
+        <form id="binForm" class="mb-4">
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <input type="text" class="form-control" id="description" required>
+            </div>
+            <div class="mb-3">
+                <label for="binLocation" class="form-label">Bin Location</label>
+                <input type="text" class="form-control" id="binLocation" required>
+            </div>
+            <div class="mb-3">
+                <label for="qty" class="form-label">Qty</label>
+                <input type="number" class="form-control" id="qty" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Bin</button>
+        </form>
+
+        <!-- Table to display bin locations -->
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Description</th>
+                    <th>Bin Location</th>
+                    <th>Qty</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="binTable">
+                <!-- Bin locations will be populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Load bin locations from localStorage
+        let bins = JSON.parse(localStorage.getItem('bins')) || [];
+        let editingId = null;
+
+        // Generate the next ID (serialized increment by 1)
+        function getNextId() {
+            if (bins.length === 0) return 1;
+            return Math.max(...bins.map(bin => bin.id)) + 1;
+        }
+
+        // Save bins to localStorage
+        function saveBins() {
+            localStorage.setItem('bins', JSON.stringify(bins));
+        }
+
+        // Render bins in the table (sorted by ID)
+        function renderBins() {
+            const binTable = document.getElementById('binTable');
+            // Sort bins by ID
+            const sortedBins = bins.slice().sort((a, b) => a.id - b.id);
+            binTable.innerHTML = sortedBins.map(bin => `
+                <tr>
+                    <td>${bin.id}</td>
+                    <td>${bin.description}</td>
+                    <td>${bin.binLocation}</td>
+                    <td>${bin.qty}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" onclick="editBin(${bin.id})">Edit</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteBin(${bin.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Add or update a bin
+        document.getElementById('binForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const description = document.getElementById('description').value;
+            const binLocation = document.getElementById('binLocation').value;
+            const qty = document.getElementById('qty').value;
+
+            if (editingId !== null) {
+                // Update existing bin
+                const bin = bins.find(b => b.id === editingId);
+                bin.description = description;
+                bin.binLocation = binLocation;
+                bin.qty = qty;
+                editingId = null;
+            } else {
+                // Add new bin
+                const bin = { id: getNextId(), description, binLocation, qty };
+                bins.push(bin);
+            }
+
+            saveBins();
+            renderBins();
+            document.getElementById('binForm').reset();
+        });
+
+        // Edit a bin
+        function editBin(id) {
+            const bin = bins.find(b => b.id === id);
+            if (bin) {
+                document.getElementById('description').value = bin.description;
+                document.getElementById('binLocation').value = bin.binLocation;
+                document.getElementById('qty').value = bin.qty;
+                editingId = id;
+            }
+        }
+
+        // Delete a bin
+        function deleteBin(id) {
+            if (confirm('Are you sure you want to delete this bin?')) {
+                bins = bins.filter(b => b.id !== id);
+                saveBins();
+                renderBins();
+            }
+        }
+
+        // Initial render
+        renderBins();
+    </script>
+</body>
+</html>
